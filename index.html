@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PARKOUR NEÓN ⚡</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+body { background: #050510; overflow: hidden; color: white; }
+canvas { display: block; background: linear-gradient(180deg, #0a0a20 0%, #1a0a30 50%, #0a1020 100%); }
+
+/* ===== ESTRELLAS ANIMADAS ===== */
+.bg-stars { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 1; }
+.star { position: absolute; background: white; border-radius: 50%; animation: twinkle ease-in-out infinite; }
+@keyframes twinkle {
+    0%, 100% { opacity: 0.2; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.5); }
+}
+
+/* ===== ESFERAS FLOTANTES ===== */
+.floating-orb {
+    position: absolute; border-radius: 50%; filter: blur(40px);
+    animation: floatOrb 8s ease-in-out infinite;
+}
+@keyframes floatOrb {
+    0% { transform: translateY(0) translateX(0); }
+    25% { transform: translateY(-30px) translateX(20px); }
+    50% { transform: translateY(0) translateX(40px); }
+    75% { transform: translateY(30px) translateX(20px); }
+    100% { transform: translateY(0) translateX(0); }
+}
+
+/* ===== LÍNEAS ARCOÍRIS ===== */
+.rainbow-line {
+    position: absolute; height: 2px; width: 0;
+    background: linear-gradient(90deg, #00ffff, #ff00ff, #ffff00, #00ffff);
+    background-size: 300% 100%;
+    animation: rainbowGlow 3s linear infinite, lineGrow 4s ease-in-out infinite alternate;
+}
+@keyframes rainbowGlow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
+}
+@keyframes lineGrow {
+    0% { width: 10%; opacity: 0; }
+    50% { opacity: 0.6; }
+    100% { width: 90%; opacity: 0; }
+}
+
+/* ===== PANTALLA DE INICIO ===== */
+.start-screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(ellipse at top, #1a0a40 0%, #050510 70%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 100; padding: 20px;
+}
+
+.game-title {
+    font-size: clamp(40px, 12vw, 90px); font-weight: 900;
+    background: linear-gradient(90deg, #00ffff, #ff00ff, #ffff00, #00ffff);
+    background-size: 300% 100%;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    animation: titleGradient 4s ease-in-out infinite, titleFloat 3s ease-in-out infinite;
+    margin-bottom: 10px; text-align: center;
+    filter: drop-shadow(0 0 30px #00ffff55);
+    position: relative; z-index: 2;
+}
+@keyframes titleGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+@keyframes titleFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+.game-subtitle {
+    color: #888; font-size: 18px; margin-bottom: 40px; letter-spacing: 6px;
+    animation: pulseText 2s ease-in-out infinite;
+    position: relative; z-index: 2; text-align: center;
+}
+@keyframes pulseText {
+    0%, 100% { opacity: 0.6; letter-spacing: 6px; }
+    50% { opacity: 1; letter-spacing: 8px; }
+}
+
+/* ===== CONTROL DE MÚSICA ===== */
+.music-control {
+    position: absolute; top: 20px; right: 20px; z-index: 101;
+    background: rgba(0,0,0,0.5); border: 1px solid #333;
+    color: #00ffff; padding: 8px 16px; border-radius: 20px;
+    cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;
+    transition: all 0.3s;
+}
+.music-control:hover { border-color: #00ffff; background: rgba(0,255,255,0.1); }
+.music-bars { display: flex; gap: 2px; align-items: flex-end; height: 14px; }
+.music-bar { width: 3px; background: #00ffff; border-radius: 2px; animation: musicBars 0.6s ease-in-out infinite alternate; }
+.music-bar:nth-child(1) { height: 6px; animation-delay: 0s; }
+.music-bar:nth-child(2) { height: 12px; animation-delay: 0.15s; }
+.music-bar:nth-child(3) { height: 8px; animation-delay: 0.3s; }
+@keyframes musicBars {
+    0% { height: 4px; }
+    100% { height: 14px; }
+}
+.music-paused .music-bar { animation: none; height: 4px; }
+
+/* ===== BOTONES ===== */
+.btn {
+    padding: 15px 50px; font-size: 20px; border: none; border-radius: 12px;
+    cursor: pointer; font-weight: bold; transition: all 0.3s; margin: 8px;
+    position: relative; overflow: hidden;
+}
+.btn:disabled { opacity: 0.6; cursor: wait; }
+.btn::before {
+    content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+.btn:hover::before { left: 100%; }
+.btn-primary {
+    background: linear-gradient(90deg, #00ffff, #ff00ff);
+    color: white; box-shadow: 0 0 20px #00ffff55, 0 0 40px #ff00ff33;
+    animation: btnPulse 2s ease-in-out infinite;
+}
+@keyframes btnPulse {
+    0%, 100% { box-shadow: 0 0 20px #00ffff55, 0 0 40px #ff00ff33; }
+    50% { box-shadow: 0 0 30px #00ffff88, 0 0 60px #ff00ff55; }
+}
+.btn-primary:hover { transform: scale(1.05); }
+.btn-secondary { background: transparent; border: 2px solid #444; color: #aaa; }
+
+/* ===== CAJA DE AUTENTICACIÓN ===== */
+.auth-box {
+    background: #101025; padding: 30px; border-radius: 16px; border: 1px solid #222;
+    width: 90%; max-width: 380px;
+    animation: popIn 0.6s ease-out;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 40px rgba(0,255,255,0.05);
+    position: relative; z-index: 2;
+}
+@keyframes popIn {
+    0% { transform: translateY(30px) scale(0.95); opacity: 0; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.auth-title {
+    font-size: 22px; margin-bottom: 20px; color: #00ffff; text-align: center;
+    animation: glowText 2s ease-in-out infinite alternate;
+}
+@keyframes glowText {
+    0% { text-shadow: 0 0 5px #00ffff44; }
+    100% { text-shadow: 0 0 15px #00ffff88, 0 0 25px #ff00ff44; }
+}
+
+.input {
+    width: 100%; padding: 14px; margin: 8px 0;
+    background: #080818; border: 1px solid #333; border-radius: 8px;
+    color: white; font-size: 16px; outline: none;
+    transition: all 0.3s;
+}
+.input:focus { border-color: #00ffff; box-shadow: 0 0 10px #00ffff44; }
+
+.tab-buttons { display: flex; margin-bottom: 20px; position: relative; z-index: 2; width: 90%; max-width: 380px; }
+.tab-btn {
+    flex: 1; padding: 10px; background: #151530; border: none; color: #888;
+    cursor: pointer; font-size: 15px; transition: all 0.3s;
+}
+.tab-btn.active { background: #252550; color: #00ffff; border-bottom: 2px solid #00ffff; text-shadow: 0 0 8px #00ffff44; }
+
+.error-msg { color: #ff6666; font-size: 13px; display: none; margin: 8px 0; }
+.hidden { display: none !important; }
+
+/* ===== PANTALLA DE BANEADO ===== */
+.banned-screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: #050510; z-index: 300; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 30px;
+}
+.banned-screen.active { display: flex; }
+.ban-x { font-size: 120px; color: #ff3333; font-weight: bold; line-height: 1; text-shadow: 0 0 40px #ff333344; animation: shake 0.5s ease-out; }
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+.ban-title { font-size: 36px; color: #ff3333; margin: 20px 0; font-weight: bold; }
+.ban-reason { font-size: 16px; color: #aaa; max-width: 400px; line-height: 1.6; background: #1a0a0a; padding: 20px; border-radius: 10px; border: 1px solid #ff333333; }
+
+/* ===== INTERFAZ DEL JUEGO ===== */
+.gameUI { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.ui-top { position: absolute; top: 15px; left: 15px; z-index: 10; }
+.coins { display: flex; gap: 15px; margin-bottom: 10px; flex-wrap: wrap; }
+.coin { display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.6); padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; }
+.coin-cu { color: #cd7f32; } .coin-au { color: #ffd700; } .coin-di { color: #00d8ff; }
+.level-bar { width: 180px; height: 8px; background: #222; border-radius: 4px; overflow: hidden; }
+.level-fill { height: 100%; background: linear-gradient(90deg, #00ffff, #ff00ff); width: 0%; transition: width 0.3s; }
+.menu-btn { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.6); border: none; color: white; padding: 10px 15px; border-radius: 8px; font-size: 20px; cursor: pointer; z-index: 10; }
+.controls-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #666; z-index: 10; text-align: center; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<!-- 🎵 MÚSICA -->
+<audio id="bgMusic" loop preload="auto">
+    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    Tu navegador no soporta audio.
+</audio>
+
+<!-- ❌ PANTALLA DE BANEADO -->
+<div id="bannedScreen" class="banned-screen">
+    <div class="ban-x">✕</div>
+    <h1 class="ban-title">BANEADO</h1>
+    <p id="banReason" class="ban-reason">No puedes acceder a PARKOUR NEÓN en este momento.</p>
+</div>
+
+<!-- ✨ PANTALLA DE INICIO -->
+<div id="startScreen" class="start-screen">
+    <div class="bg-stars" id="starsContainer"></div>
+    <div class="floating-orb" style="width:200px; height:200px; background:#00ffff22; top:15%; left:10%; animation-delay:0s;"></div>
+    <div class="floating-orb" style="width:150px; height:150px; background:#ff00ff22; top:60%; right:15%; animation-delay:2s;"></div>
+    <div class="floating-orb" style="width:120px; height:120px; background:#ffff0018; bottom:20%; left:25%; animation-delay:4s;"></div>
+    <div class="rainbow-line" style="top:20%; left:5%; animation-delay:0s;"></div>
+    <div class="rainbow-line" style="top:40%; left:5%; animation-delay:1.5s;"></div>
+    <div class="rainbow-line" style="top:60%; left:5%; animation-delay:3s;"></div>
+
+    <button class="music-control music-paused" id="musicBtn" aria-label="Música">
+        <span>🎵</span>
+        <div class="music-bars" id="musicBars">
+            <div class="music-bar"></div>
+            <div class="music-bar"></div>
+            <div class="music-bar"></div>
+        </div>
+    </button>
+
+    <h1 class="game-title">PARKOUR NEÓN</h1>
+    <p class="game-subtitle">⚡ SALTA • DISPARA • BRILLA ⚡</p>
+
+    <div id="authTabs" class="tab-buttons">
+        <button id="tabLogin" class="tab-btn active">Iniciar Sesión</button>
+        <button id="tabRegister" class="tab-btn">Crear Cuenta</button>
+    </div>
+
+    <!-- 🔑 INICIAR SESIÓN -->
+    <div id="loginBox" class="auth-box">
+        <h2 class="auth-title">🔑 Entrar al juego</h2>
+        <input type="text" id="loginUser" class="input" placeholder="Nombre de usuario" autocomplete="username">
+        <input type="password" id="loginPass" class="input" placeholder="Contraseña" autocomplete="current-password">
+        <p id="loginError" class="error-msg"></p>
+        <button id="btnLogin" class="btn btn-primary" style="width:100%;margin:0;">Entrar 🚀</button>
+    </div>
+
+    <!-- ✨ CREAR CUENTA -->
+    <div id="registerBox" class="auth-box hidden">
+        <h2 class="auth-title">✨ Crear tu cuenta</h2>
+        <input type="text" id="regUser" class="input" placeholder="Nombre de usuario" autocomplete="username">
+        <input type="password" id="regPass" class="input" placeholder="Contraseña (mín. 6)" autocomplete="new-password">
+        <input type="password" id="regPass2" class="input" placeholder="Repetir contraseña" autocomplete="new-password">
+        <p id="regError" class="error-msg"></p>
+        <button id="btnRegister" class="btn btn-primary" style="width:100%;margin:0;">Registrarme 🎮</button>
+    </div>
+</div>
+
+<!-- 🎮 INTERFAZ DEL JUEGO -->
+<div id="gameUI" class="gameUI">
+    <canvas id="gameCanvas"></canvas>
+    <div class="ui-top">
+        <div class="coins">
+            <span class="coin coin-cu">🟤 <span id="cuCount">0</span></span>
+            <span class="coin coin-au">🟡 <span id="auCount">0</span></span>
+            <span class="coin coin-di">💎 <span id="diCount">0</span></span>
+        </div>
+        <div style="font-size:12px;color:#888;margin-top:4px;">Nivel <span id="playerLevel">1</span></div>
+        <div class="level-bar"><div id="levelFill" class="level-fill"></div></div>
+    </div>
+    <button id="menuBtn" class="menu-btn">☰</button>
+    <div class="controls-hint">A/D o ←/→ moverse • Espacio saltar (doble salto) • J/X disparar • Móvil: izquierda dispara, derecha salta</div>
+</div>
+
+<script>
+// ✨ ESTRELLAS
+const starsContainer = document.getElementById('starsContainer');
+for (let i = 0; i < 80; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    const size = Math.random() * 3 + 1;
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.width = size + 'px';
+    star.style.height = size + 'px';
+    star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+    star.style.animationDelay = Math.random() * 3 + 's';
+    starsContainer.appendChild(star);
+}
+
+// 🎵 MÚSICA
+const bgMusic = document.getElementById('bgMusic');
+const musicBars = document.getElementById('musicBars');
+let musicPlaying = false;
+document.getElementById('musicBtn').addEventListener('click', () => {
+    if (musicPlaying) {
+        bgMusic.pause();
+        musicBars.parentElement.classList.add('music-paused');
+        musicPlaying = false;
+    } else {
+        bgMusic.volume = 0.3;
+        bgMusic.play().then(() => {
+            musicBars.parentElement.classList.remove('music-paused');
+            musicPlaying = true;
+        }).catch(err => console.log('No se pudo reproducir la música:', err));
+    }
+});
+
+// 🔄 PESTAÑAS
+const tabLogin = document.getElementById('tabLogin');
+const tabRegister = document.getElementById('tabRegister');
+const loginBox = document.getElementById('loginBox');
+const registerBox = document.getElementById('registerBox');
+tabLogin.addEventListener('click', () => {
+    tabLogin.classList.add('active'); tabRegister.classList.remove('active');
+    loginBox.classList.remove('hidden'); registerBox.classList.add('hidden');
+});
+tabRegister.addEventListener('click', () => {
+    tabRegister.classList.add('active'); tabLogin.classList.remove('active');
+    registerBox.classList.remove('hidden'); loginBox.classList.add('hidden');
+});
+</script>
+
+<script type="module" src="game.js"></script>
+</body>
+</html>

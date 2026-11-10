@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function isAdmin() {
+      return request.auth != null &&
+        exists(/databases/$(db)/documents/admins/$(request.auth.uid));
+    }
+
+    match /users/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['username','cu','au','di','level','xp','banned','banReason','createdAt'])
+        && request.resource.data.username == request.auth.token.email.split('@')[0]
+        && request.resource.data.banned == false
+        && request.resource.data.banReason == ''
+        && request.resource.data.cu == 0 && request.resource.data.au == 0 && request.resource.data.di == 0
+        && request.resource.data.level == 1 && request.resource.data.xp == 0
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if isAdmin() || (
+        request.auth != null && request.auth.uid == uid
+        && resource.data.banned == false
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cu','au','di','level','xp'])
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+  }
+}
